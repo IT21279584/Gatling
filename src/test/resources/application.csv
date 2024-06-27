@@ -1,0 +1,6 @@
+url,method,status,body
+https://reqres.in/api/users,GET,200,
+https://reqres.in/api/users,POST,201,{"name": "John", "job": "Developer"}
+https://reqres.in/api/users/${newEmployeeId},GET,200,
+https://reqres.in/api/users/${newEmployeeId},PUT,200,{"name": "Jane", "job": "Senior Developer"}
+https://reqres.in/api/users/${newEmployeeId},DELETE,204,
