@@ -1,5 +1,8 @@
 package com.example.Gatling;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.gatling.javaapi.core.ChainBuilder;
 import io.gatling.javaapi.core.ScenarioBuilder;
 import io.gatling.javaapi.core.Simulation;
@@ -7,6 +10,7 @@ import io.gatling.javaapi.http.HttpProtocolBuilder;
 import static io.gatling.javaapi.core.CoreDsl.*;
 import static io.gatling.javaapi.http.HttpDsl.*;
 
+import java.io.IOException;
 import java.util.List;
 
 public class EmployeeSimulation extends Simulation {
@@ -23,12 +27,29 @@ public class EmployeeSimulation extends Simulation {
             String responseBody = session.getString("responseBody");
             int statusCode = session.getInt("statusCode");
 
-            CustomResponse customResponse = new CustomResponse(statusCode, responseBody);
+            // Construct CustomResponse excluding createdAt
+            CustomResponse customResponse = new CustomResponse(statusCode, removeCreatedAt(responseBody));
             System.out.println("Custom Response for " + requestName + ": " + customResponse);
 
             return session;
         });
     }
+
+    // Helper method to remove createdAt field from JSON body
+    private String removeCreatedAt(String responseBody) {
+        try {
+            // Parse JSON and remove createdAt
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode jsonNode = mapper.readTree(responseBody);
+            ((ObjectNode) jsonNode).remove("createdAt");
+            ((ObjectNode) jsonNode).remove("updatedAt");
+            return mapper.writeValueAsString(jsonNode);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return responseBody; // Return original body if parsing fails
+        }
+    }
+
 
     private ChainBuilder executeGetRequests() {
         ChainBuilder chain = exec(flushHttpCache()).exec(flushSessionCookies());
@@ -110,7 +131,7 @@ public class EmployeeSimulation extends Simulation {
 
     {
         setUp(
-                users.injectOpen(rampUsers(10).during(10))
+                users.injectOpen(rampUsers(1).during(10))
         ).protocols(httpProtocol)
                 .maxDuration(30);
     }
