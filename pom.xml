@@ -82,7 +82,7 @@
 							<goal>test</goal>
 						</goals>
 						<configuration>
-							<simulationClass>com.example.Gatling.EmployeeSimulation</simulationClass> <!-- Replace with your simulation class -->
+							<simulationClass>com.example.Gatling.TestSimulation</simulationClass> <!-- Replace with your simulation class -->
 						</configuration>
 					</execution>
 				</executions>

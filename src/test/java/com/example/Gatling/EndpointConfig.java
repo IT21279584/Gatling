@@ -6,11 +6,21 @@ public class EndpointConfig {
     private final int expectedStatus;
     private final String body;
 
+    private String expectedResponse;
+
     public EndpointConfig(String url, String method, int expectedStatus, String body) {
         this.url = url;
         this.method = method;
         this.expectedStatus = expectedStatus;
         this.body = body;
+    }
+
+    public EndpointConfig(String url, String method, int expectedStatus, String body, String expectedResponse) {
+        this.url = url;
+        this.method = method;
+        this.expectedStatus = expectedStatus;
+        this.body = body;
+        this.expectedResponse = expectedResponse;
     }
 
     public String getUrl() {
@@ -29,5 +39,11 @@ public class EndpointConfig {
         return body;
     }
 
+    public String getExpectedResponse() {
+        return expectedResponse;
+    }
 
+    public void setExpectedResponse(String expectedResponse) {
+        this.expectedResponse = expectedResponse;
+    }
 }
