@@ -1,8 +1,6 @@
-url,method,status,body
-https://reqres.in/api/users,GET,200,
-https://reqres.in/api/users,POST,201,{"name": "John", "job": "Developer"}
-https://reqres.in/api/users,POST,201,{"name": "Shane", "job": "Developer"}
-https://reqres.in/api/users/${newId},GET,200,
-https://reqres.in/api/users/${newId},PUT,200,{"name": "Jane", "job": "Senior Developer"}
-https://reqres.in/api/users/${newId},PATCH,200,{"job": "Lead Developer"}
-https://reqres.in/api/users/${newId},DELETE,204,
+url,method,status,body,expectedResponse
+https://reqres.in/api/users,POST,201,"{\"name\": \"John\", \"job\": \"Developer\"}","{\"name\": \"John\", \"job\": \"Developer\"}"
+https://reqres.in/api/users,GET,200,,"{\"name\": \"John\", \"job\": \"Developer\"}"
+https://reqres.in/api/users/${newId},GET,200,,"{\"name\": \"HJohn\", \"job\": \"Developer\"}"
+https://reqres.in/api/users/${newId},PUT,200,"{\"name\": \"Jane\", \"job\": \"Senior Developer\"}","{\"name\": \"Jane\", \"job\": \"Senior Developer\"}"
+https://reqres.in/api/users/${newId},DELETE,204,,""
