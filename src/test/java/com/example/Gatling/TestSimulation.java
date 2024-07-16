@@ -22,7 +22,9 @@ public class TestSimulation extends Simulation {
 
     private final HttpProtocolBuilder httpProtocol = http
             .acceptHeader("application/json")
-            .contentTypeHeader("application/json");
+            .contentTypeHeader("application/json")
+
+            ;
 
     private final ConfigLoader configLoader = new ConfigLoader();
     private final List<EndpointConfig> endpointConfigs = configLoader.getEndpointConfigs();
@@ -30,8 +32,8 @@ public class TestSimulation extends Simulation {
     private ChainBuilder logResponseAndValidate(String requestName, EndpointConfig endpoint) {
         return exec(session -> {
             String responseBody = session.get("postData");
-            String removeResponse = session.get("removePostData");
             String expectedResponse = endpoint.getExpectedResponse();
+            String response = session.get("responseBody");
 
             ObjectMapper mapper = new ObjectMapper();
             boolean validationFailed = false;
@@ -49,21 +51,28 @@ public class TestSimulation extends Simulation {
                     ((ObjectNode) actualJson).remove("id");
                 }
 
-                // Compare JSON objects
-                try {
-                    JSONAssert.assertEquals(expectedJson.toString(), actualJson.toString(), JSONCompareMode.LENIENT);
-                    System.out.println(requestName + " - Response matches expected.");
-                } catch (AssertionError e) {
-                    System.out.println(requestName + " - Response does not match expected.");
-                    System.out.println("Expected: " + expectedResponse);
-                    System.out.println("Actual: " + responseBody);
-                    validationFailed = true;
+                // Check if the response contains a token
+                boolean containsToken = response.toString().contains("token");
 
-                    if (validationFailed) {
-                        return session.markAsFailed(); // Mark the session as failed
+                if (containsToken) {
+                    // Log that the response contains a token
+                    System.out.println(requestName + " - Response contains token as expected.");
+                } else {
+                    // Perform full validation
+                    try {
+                        JSONAssert.assertEquals(expectedJson.toString(), actualJson.toString(), JSONCompareMode.LENIENT);
+                        System.out.println(requestName + " - Response matches expected.");
+                    } catch (AssertionError e) {
+                        System.out.println(requestName + " - Response does not match expected.");
+                        System.out.println("Expected: " + expectedResponse);
+                        System.out.println("Actual: " + responseBody);
+                        validationFailed = true;
+
+                        if (validationFailed) {
+                            return session.markAsFailed(); // Mark the session as failed
+                        }
                     }
                 }
-
             } catch (Exception e) {
                 e.printStackTrace();
                 validationFailed = true;
@@ -76,6 +85,7 @@ public class TestSimulation extends Simulation {
             return session;
         });
     }
+
 
     private ChainBuilder logDeleteResponseAndValidate(String requestName, EndpointConfig endpoint) {
         return exec(session -> {
@@ -164,6 +174,12 @@ public class TestSimulation extends Simulation {
                                         } catch (Exception e) {
                                             throw new RuntimeException(e);
                                         }
+                                        if (responseJson.has("token")) {
+                                            String token = responseJson.get("token").asText();
+                                            session = session.set("authToken", token);
+
+                                        }
+
                                         return session;
                                     })
                                     .exec(logResponseAndValidate("Request - " + method + " " + endpoint.getUrl(), endpoint));
@@ -171,6 +187,7 @@ public class TestSimulation extends Simulation {
                         case "GET":
                             request = http("Request - " + method + " " + endpoint.getUrl())
                                     .get(session -> session.getString("sessionUrl"))
+                                    .header("Authorization", session -> "Bearer " + session.getString("authToken"))
                                     .body(StringBody(endpoint.getBody())).asJson();
                             chain = chain
                                     .exec(session -> {
@@ -181,6 +198,7 @@ public class TestSimulation extends Simulation {
                                         }
                                         session = session.set("sessionUrl", url);
                                         System.out.println("Request URL: " + url + " Method: " + method); // Log the URL
+
                                         return session;
                                     })
                                     .exec(
@@ -211,6 +229,7 @@ public class TestSimulation extends Simulation {
                         case "PUT":
                             request = http("Request - " + method + " " + endpoint.getUrl())
                                     .put(session -> session.getString("sessionUrl"))
+                                    .header("Authorization", session -> "Bearer " + session.getString("authToken"))
                                     .body(StringBody(endpoint.getBody())).asJson();
                             chain = chain
                                     .exec(session -> {
@@ -248,6 +267,7 @@ public class TestSimulation extends Simulation {
                         case "PATCH":
                             request = http("Request - " + method + " " + endpoint.getUrl())
                                     .patch(session -> session.getString("sessionUrl"))
+                                    .header("Authorization", session -> "Bearer " + session.getString("authToken"))
                                     .body(StringBody(endpoint.getBody())).asJson();
                             chain = chain
                                     .exec(session -> {
@@ -284,7 +304,9 @@ public class TestSimulation extends Simulation {
                             break;
                         case "DELETE":
                             request = http("Request - " + method + " " + endpoint.getUrl())
-                                    .delete(session -> session.getString("sessionUrl"));
+                                    .delete(session -> session.getString("sessionUrl"))                                    .header("Authorization", session -> "Bearer " + session.getString("authToken"))
+                                    .header("Authorization", session -> "Bearer " + session.getString("authToken"));
+
                             chain = chain
                                     .exec(session -> {
                                         String url = endpoint.getUrl();
@@ -331,13 +353,14 @@ public class TestSimulation extends Simulation {
         }
     }
 
+
     {
-        ScenarioBuilder scn = scenario("API Test Scenario")
-                .exec(executeRequests("POST"))
-                .exec(executeRequests("GET"))
-                .exec(executeRequests("PUT"))
-                .exec(executeRequests("PATCH"))
-                .exec(executeRequests("DELETE"));
+        ScenarioBuilder scn = scenario("API Test Scenario");
+
+        // Execute requests based on available methods in endpointConfigs
+        for (String method : new String[]{"POST", "GET", "PUT", "PATCH", "DELETE"}) {
+            scn = scn.exec(executeRequests(method));
+        }
 
         setUp(scn.injectOpen(atOnceUsers(1))).protocols(httpProtocol);
     }

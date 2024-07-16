@@ -1,6 +1,5 @@
 package com.example.Gatling;
 
-import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 
 import java.io.FileReader;
@@ -18,14 +17,20 @@ public class ConfigLoader {
 
     private void loadConfig() {
         try (FileReader reader = new FileReader(CSV_FILE_PATH)) {
-            CsvToBean<EndpointConfig> csvToBean = new CsvToBeanBuilder<EndpointConfig>(reader)
+            endpointConfigs = new CsvToBeanBuilder<EndpointConfig>(reader)
                     .withType(EndpointConfig.class)
                     .withIgnoreLeadingWhiteSpace(true)
-                    .build();
+                    .build()
+                    .parse();
 
-            endpointConfigs = csvToBean.parse();
+            // Optional: Log loaded configurations
+            for (EndpointConfig config : endpointConfigs) {
+                System.out.println("Loaded EndpointConfig: " + config);
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
+            throw new RuntimeException("Error loading CSV file: " + CSV_FILE_PATH, e);
         }
     }
 
