@@ -4,19 +4,19 @@ import com.opencsv.bean.CsvBindByName;
 
 public class EndpointConfig {
 
-    @CsvBindByName(column = "url")
+//    @CsvBindByName(column = "url")
     private String url;
 
-    @CsvBindByName(column = "method")
+//    @CsvBindByName(column = "method")
     private String method;
 
-    @CsvBindByName(column = "status")
+//    @CsvBindByName(column = "status")
     private int expectedStatus;
 
-    @CsvBindByName(column = "body")
+//    @CsvBindByName(column = "body")
     private String body;
 
-    @CsvBindByName(column = "expectedResponse")
+//    @CsvBindByName(column = "expectedResponse")
     private String expectedResponse;
 
     // No-argument constructor required by OpenCSV

@@ -121,11 +121,12 @@ public class TestSimulation extends Simulation {
     }
 
 
-    private ChainBuilder executeRequests(String method) {
+    private ChainBuilder executeRequests() {
         ChainBuilder chain = exec(flushHttpCache(), flushSessionCookies());
 
         if (endpointConfigs != null) {
             for (EndpointConfig endpoint : endpointConfigs) {
+                String method = endpoint.getMethod().toUpperCase();
                 if (endpoint.getMethod().equalsIgnoreCase(method)) {
                     HttpRequestActionBuilder request = null;
 
@@ -355,13 +356,14 @@ public class TestSimulation extends Simulation {
 
 
     {
-        ScenarioBuilder scn = scenario("API Test Scenario");
+        ScenarioBuilder scn = scenario("API Test Scenario")
 
         // Execute requests based on available methods in endpointConfigs
-        for (String method : new String[]{"POST", "GET", "PUT", "PATCH", "DELETE"}) {
-            scn = scn.exec(executeRequests(method));
-        }
+//        for (String method : new String[]{"POST", "GET", "PUT", "PATCH", "DELETE"}) {
+//            scn = scn.exec(executeRequests(method));
+//        }
 
+         .exec(executeRequests());
         setUp(scn.injectOpen(atOnceUsers(1))).protocols(httpProtocol);
     }
 }
