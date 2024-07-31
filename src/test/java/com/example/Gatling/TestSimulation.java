@@ -6,8 +6,6 @@ import io.gatling.javaapi.core.ScenarioBuilder;
 import io.gatling.javaapi.core.Simulation;
 import io.gatling.javaapi.http.HttpProtocolBuilder;
 import io.gatling.javaapi.http.HttpRequestActionBuilder;
-import org.skyscreamer.jsonassert.JSONAssert;
-import org.skyscreamer.jsonassert.JSONCompareMode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -22,104 +20,18 @@ public class TestSimulation extends Simulation {
 
     private final HttpProtocolBuilder httpProtocol = http
             .acceptHeader("application/json")
-            .contentTypeHeader("application/json")
-
-            ;
+            .contentTypeHeader("application/json");
 
     private final ConfigLoader configLoader = new ConfigLoader();
     private final List<EndpointConfig> endpointConfigs = configLoader.getEndpointConfigs();
+    private final ResponseValidator responseValidator = new ResponseValidator();
 
-    private ChainBuilder logResponseAndValidate(String requestName, EndpointConfig endpoint) {
-        return exec(session -> {
-            String responseBody = session.get("postData");
-            String expectedResponse = endpoint.getExpectedResponse();
-            String response = session.get("responseBody");
-
-            ObjectMapper mapper = new ObjectMapper();
-            boolean validationFailed = false;
-            try {
-                // Parse expected response JSON
-                JsonNode expectedJson = mapper.readTree(expectedResponse);
-
-                // Parse actual response JSON
-                JsonNode actualJson = mapper.readTree(responseBody);
-
-                // Remove fields if they exist
-                if (actualJson.isObject()) {
-                    ((ObjectNode) actualJson).remove("createdAt");
-                    ((ObjectNode) actualJson).remove("updatedAt");
-                    ((ObjectNode) actualJson).remove("id");
-                }
-
-                // Check if the response contains a token
-                boolean containsToken = response.toString().contains("token");
-
-                if (containsToken) {
-                    // Log that the response contains a token
-                    System.out.println(requestName + " - Response contains token as expected.");
-                } else {
-                    // Perform full validation
-                    try {
-                        JSONAssert.assertEquals(expectedJson.toString(), actualJson.toString(), JSONCompareMode.LENIENT);
-                        System.out.println(requestName + " - Response matches expected.");
-                    } catch (AssertionError e) {
-                        System.out.println(requestName + " - Response does not match expected.");
-                        System.out.println("Expected: " + expectedResponse);
-                        System.out.println("Actual: " + responseBody);
-                        validationFailed = true;
-
-                        if (validationFailed) {
-                            return session.markAsFailed(); // Mark the session as failed
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                validationFailed = true;
-            }
-
-            if (validationFailed) {
-                return session.markAsFailed(); // Mark the session as failed
-            }
-
-            return session;
-        });
+    private HttpRequestActionBuilder Checks(HttpRequestActionBuilder request, EndpointConfig endpoint) {
+        return request
+                .check(status().is(endpoint.getExpectedStatus()))
+                .check(bodyString().saveAs("responseBody"))
+                .check(status().saveAs("statusCode"));
     }
-
-
-    private ChainBuilder logDeleteResponseAndValidate(String requestName, EndpointConfig endpoint) {
-        return exec(session -> {
-            String removeResponse = session.getString("removePostData");
-            String expectedResponse = endpoint.getExpectedResponse();
-
-            boolean validationFailed = false;
-            try {
-                if (removeResponse == null || removeResponse.isEmpty()) {
-                    System.out.println(requestName + " - Response matches expected.");
-                } else {
-                    System.out.println(requestName + " - Response is not empty.");
-                    System.out.println("Expected: <empty>");
-                    System.out.println("Actual: " + removeResponse);
-                    validationFailed = true;
-                }
-
-                if (validationFailed) {
-                    return session.markAsFailed(); // Mark the session as failed
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                validationFailed = true;
-            }
-
-            if (validationFailed) {
-                return session.markAsFailed(); // Mark the session as failed
-            }
-
-            return session;
-        });
-    }
-
 
     private ChainBuilder executeRequests() {
         ChainBuilder chain = exec(flushHttpCache(), flushSessionCookies());
@@ -143,21 +55,8 @@ public class TestSimulation extends Simulation {
                                         session = session.set("newId", newId);
                                         return session;
                                     })
-                                    .exec(session -> {
-                                        String url = endpoint.getUrl();
-                                        if (url.contains("${newId}")) {
-                                            int newId = session.getInt("newId");
-                                            url = url.replace("${newId}", String.valueOf(newId));
-                                        }
-                                        session = session.set("sessionUrl", url);
-                                        System.out.println("Request URL: " + url + " Method: " + method); // Log the URL
-                                        return session;
-                                    })
-                                    .exec(
-                                            request
-                                                    .check(status().is(endpoint.getExpectedStatus()))
-                                                    .check(bodyString().saveAs("responseBody"))
-                                                    .check(status().saveAs("statusCode"))
+                                    .exec(session -> GlobalVariableUtil.updateSessionWithId(session, endpoint))
+                                    .exec(Checks(request, endpoint)
                                     )
                                     .exec(session -> {
                                         String responseBody = session.getString("responseBody");
@@ -183,7 +82,8 @@ public class TestSimulation extends Simulation {
 
                                         return session;
                                     })
-                                    .exec(logResponseAndValidate("Request - " + method + " " + endpoint.getUrl(), endpoint));
+                                    .exec(responseValidator.logResponseAndValidate("Request - " + method + " " + endpoint.getUrl(), endpoint))
+                                    .pause(5);
                             break;
                         case "GET":
                             request = http("Request - " + method + " " + endpoint.getUrl())
@@ -191,22 +91,8 @@ public class TestSimulation extends Simulation {
                                     .header("Authorization", session -> "Bearer " + session.getString("authToken"))
                                     .body(StringBody(endpoint.getBody())).asJson();
                             chain = chain
-                                    .exec(session -> {
-                                        String url = endpoint.getUrl();
-                                        if (url.contains("${newId}")) {
-                                            int newId = session.getInt("newId");
-                                            url = url.replace("${newId}", String.valueOf(newId));
-                                        }
-                                        session = session.set("sessionUrl", url);
-                                        System.out.println("Request URL: " + url + " Method: " + method); // Log the URL
-
-                                        return session;
-                                    })
-                                    .exec(
-                                            request
-                                                    .check(status().is(endpoint.getExpectedStatus()))
-                                                    .check(bodyString().saveAs("responseBody"))
-                                                    .check(status().saveAs("statusCode"))
+                                    .exec(session -> GlobalVariableUtil.updateSessionWithId(session, endpoint))
+                                    .exec(Checks(request, endpoint)
                                     )
                                     .exec(session -> {
                                         // Set the session URL to include the ID for GET requests
@@ -218,14 +104,12 @@ public class TestSimulation extends Simulation {
                                             } catch (JsonProcessingException e) {
                                                 throw new RuntimeException(e);
                                             }
-                                            if (postJson.has("id")) {
-                                                int id = postJson.get("id").asInt();
-                                                session = session.set("sessionUrl", endpoint.getUrl().replace("${newId}", String.valueOf(id)));
-                                            }
                                         }
+
                                         return session;
                                     })
-                                    .exec(logResponseAndValidate("Request - " + method + " " + endpoint.getUrl(), endpoint));
+                                    .exec(responseValidator.logResponseAndValidate("Request - " + method, endpoint))
+                                    .pause(5);
                             break;
                         case "PUT":
                             request = http("Request - " + method + " " + endpoint.getUrl())
@@ -233,21 +117,8 @@ public class TestSimulation extends Simulation {
                                     .header("Authorization", session -> "Bearer " + session.getString("authToken"))
                                     .body(StringBody(endpoint.getBody())).asJson();
                             chain = chain
-                                    .exec(session -> {
-                                        String url = endpoint.getUrl();
-                                        if (url.contains("${newId}")) {
-                                            int newId = session.getInt("newId");
-                                            url = url.replace("${newId}", String.valueOf(newId));
-                                        }
-                                        session = session.set("sessionUrl", url);
-                                        System.out.println("Request URL: " + url + " Method: " + method); // Log the URL
-                                        return session;
-                                    })
-                                    .exec(
-                                            request
-                                                    .check(status().is(endpoint.getExpectedStatus()))
-                                                    .check(bodyString().saveAs("responseBody"))
-                                                    .check(status().saveAs("statusCode"))
+                                    .exec(session -> GlobalVariableUtil.updateSessionWithId(session, endpoint))
+                                    .exec(Checks(request, endpoint)
                                     )
                                     .exec(session -> {
                                         // Update specific field in the session data for PUT request
@@ -263,7 +134,8 @@ public class TestSimulation extends Simulation {
                                         }
                                         return session;
                                     })
-                                    .exec(logResponseAndValidate("Request - " + method + " " + endpoint.getUrl(), endpoint));
+                                    .exec(responseValidator.logResponseAndValidate("Request - " + method, endpoint))
+                                    .pause(5);
                             break;
                         case "PATCH":
                             request = http("Request - " + method + " " + endpoint.getUrl())
@@ -271,21 +143,8 @@ public class TestSimulation extends Simulation {
                                     .header("Authorization", session -> "Bearer " + session.getString("authToken"))
                                     .body(StringBody(endpoint.getBody())).asJson();
                             chain = chain
-                                    .exec(session -> {
-                                        String url = endpoint.getUrl();
-                                        if (url.contains("${newId}")) {
-                                            int newId = session.getInt("newId");
-                                            url = url.replace("${newId}", String.valueOf(newId));
-                                        }
-                                        session = session.set("sessionUrl", url);
-                                        System.out.println("Request URL: " + url + " Method: " + method); // Log the URL
-                                        return session;
-                                    })
-                                    .exec(
-                                            request
-                                                    .check(status().is(endpoint.getExpectedStatus()))
-                                                    .check(bodyString().saveAs("responseBody"))
-                                                    .check(status().saveAs("statusCode"))
+                                    .exec(session -> GlobalVariableUtil.updateSessionWithId(session, endpoint))
+                                    .exec(Checks(request, endpoint)
                                     )
                                     .exec(session -> {
                                         // Update specific field in the session data for PATCH request
@@ -301,24 +160,16 @@ public class TestSimulation extends Simulation {
                                         }
                                         return session;
                                     })
-                                    .exec(logResponseAndValidate("Request - " + method + " " + endpoint.getUrl(), endpoint));
+                                    .exec(responseValidator.logResponseAndValidate("Request - " + method, endpoint))
+                                    .pause(5);
                             break;
                         case "DELETE":
                             request = http("Request - " + method + " " + endpoint.getUrl())
-                                    .delete(session -> session.getString("sessionUrl"))                                    .header("Authorization", session -> "Bearer " + session.getString("authToken"))
+                                    .delete(session -> session.getString("sessionUrl")).header("Authorization", session -> "Bearer " + session.getString("authToken"))
                                     .header("Authorization", session -> "Bearer " + session.getString("authToken"));
 
                             chain = chain
-                                    .exec(session -> {
-                                        String url = endpoint.getUrl();
-                                        if (url.contains("${newId}")) {
-                                            int newId = session.getInt("newId");
-                                            url = url.replace("${newId}", String.valueOf(newId));
-                                        }
-                                        session = session.set("sessionUrl", url);
-                                        System.out.println("Request URL: " + url + " Method: " + method); // Log the URL
-                                        return session;
-                                    })
+                                    .exec(session -> GlobalVariableUtil.updateSessionWithId(session, endpoint))
                                     .exec(
                                             request
                                                     .check(status().is(endpoint.getExpectedStatus()))
@@ -329,7 +180,8 @@ public class TestSimulation extends Simulation {
                                         session = session.remove("removePostData");
                                         return session;
                                     })
-                                    .exec(logDeleteResponseAndValidate("Request - " + method + " " + endpoint.getUrl(), endpoint));
+                                    .exec(responseValidator.logDeleteResponseAndValidate("Request - " + method, endpoint))
+                                    .pause(5);
                             break;
                     }
                 }
@@ -337,7 +189,6 @@ public class TestSimulation extends Simulation {
         }
         return chain;
     }
-
 
     private String updateSessionData(String originalData, String updateData) {
         ObjectMapper mapper = new ObjectMapper();
@@ -354,16 +205,9 @@ public class TestSimulation extends Simulation {
         }
     }
 
-
     {
         ScenarioBuilder scn = scenario("API Test Scenario")
-
-        // Execute requests based on available methods in endpointConfigs
-//        for (String method : new String[]{"POST", "GET", "PUT", "PATCH", "DELETE"}) {
-//            scn = scn.exec(executeRequests(method));
-//        }
-
-         .exec(executeRequests());
+                .exec(executeRequests());
         setUp(scn.injectOpen(atOnceUsers(1))).protocols(httpProtocol);
     }
 }

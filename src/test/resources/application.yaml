@@ -8,23 +8,23 @@ endpoints:
     method: "POST"
     expectedStatus: 200
     body: "{\"project\": {\"projectName\": \"Project KPM\", \"projectCode\": \"S12345\"}, \"userID\": 3}"
-    expectedResponse: "{\"projectID\": 8, \"projectName\": \"Project KPM\", \"projectCode\": \"S12345\", \"users\": {\"id\": 3, \"firstName\": \"Kavinda\", \"lastName\": \"Medagoda\", \"username\": \"kavinda@mitrai.com\", \"password\": \"$2a$10$H.lPqu4RKHHkoGJJrZRWGuJvd2yRL5yxh8PKqOcFLD0pOoC/kSjvG\", \"role\": \"HR_PERSON\", \"interviewList\": [], \"position\": \"USER\", \"active\": 1, \"enabled\": true, \"authorities\": [{\"authority\": \"HR_PERSON\"}], \"accountNonExpired\": true, \"accountNonLocked\": true, \"credentialsNonExpired\": true}}"
-  - url: "http://localhost:8080/api/projects/8"
+    expectedResponse: "{\"projectID\": 44, \"projectName\": \"Project KPM\", \"projectCode\": \"S12345\", \"users\": {\"id\": 3, \"firstName\": \"Kavinda\", \"lastName\": \"Medagoda\", \"username\": \"kavinda@mitrai.com\", \"password\": \"$2a$10$H.lPqu4RKHHkoGJJrZRWGuJvd2yRL5yxh8PKqOcFLD0pOoC/kSjvG\", \"role\": \"HR_PERSON\", \"interviewList\": [], \"position\": \"USER\", \"active\": 1, \"enabled\": true, \"authorities\": [{\"authority\": \"HR_PERSON\"}], \"accountNonExpired\": true, \"accountNonLocked\": true, \"credentialsNonExpired\": true}}"
+  - url: "http://localhost:8080/api/projects/{Id}"
     method: "GET"
     expectedStatus: 200
     body: ""
-    expectedResponse: "{\"projectID\": 8, \"projectName\": \"Project KPM\", \"projectCode\": \"S12345\", \"users\": {\"id\": 3, \"firstName\": \"Kavinda\", \"lastName\": \"Medagoda\", \"username\": \"kavinda@mitrai.com\", \"password\": \"$2a$10$H.lPqu4RKHHkoGJJrZRWGuJvd2yRL5yxh8PKqOcFLD0pOoC/kSjvG\", \"role\": \"HR_PERSON\", \"interviewList\": [], \"position\": \"USER\", \"active\": 1, \"enabled\": true, \"authorities\": [{\"authority\": \"HR_PERSON\"}], \"accountNonExpired\": true, \"accountNonLocked\": true, \"credentialsNonExpired\": true}}"
-  - url: "http://localhost:8080/api/projects/update/8"
+    expectedResponse: "{\"projectID\": 44, \"projectName\": \"Project KPM\", \"projectCode\": \"S12345\", \"users\": {\"id\": 3, \"firstName\": \"Kavinda\", \"lastName\": \"Medagoda\", \"username\": \"kavinda@mitrai.com\", \"password\": \"$2a$10$H.lPqu4RKHHkoGJJrZRWGuJvd2yRL5yxh8PKqOcFLD0pOoC/kSjvG\", \"role\": \"HR_PERSON\", \"interviewList\": [], \"position\": \"USER\", \"active\": 1, \"enabled\": true, \"authorities\": [{\"authority\": \"HR_PERSON\"}], \"accountNonExpired\": true, \"accountNonLocked\": true, \"credentialsNonExpired\": true}}"
+  - url: "http://localhost:8080/api/projects/update/{Id}"
     method: "PUT"
     expectedStatus: 200
     body: "{\"project\": {\"projectName\": \"Project KPMM\", \"projectCode\": \"S12345\"}, \"userID\": 3}"
-    expectedResponse: "{\"projectID\": 8, \"projectName\": \"Project KPMM\", \"projectCode\": \"S12345\", \"users\": {\"id\": 3, \"firstName\": \"Kavinda\", \"lastName\": \"Medagoda\", \"username\": \"kavinda@mitrai.com\", \"password\": \"$2a$10$H.lPqu4RKHHkoGJJrZRWGuJvd2yRL5yxh8PKqOcFLD0pOoC/kSjvG\", \"role\": \"HR_PERSON\", \"interviewList\": [], \"position\": \"USER\", \"active\": 1, \"enabled\": true, \"authorities\": [{\"authority\": \"HR_PERSON\"}], \"accountNonExpired\": true, \"accountNonLocked\": true, \"credentialsNonExpired\": true}}"
-  - url: "http://localhost:8080/api/projects/8"
+    expectedResponse: "{\"projectID\": 44, \"projectName\": \"Project KPMM\", \"projectCode\": \"S12345\", \"users\": {\"id\": 3, \"firstName\": \"Kavinda\", \"lastName\": \"Medagoda\", \"username\": \"kavinda@mitrai.com\", \"password\": \"$2a$10$H.lPqu4RKHHkoGJJrZRWGuJvd2yRL5yxh8PKqOcFLD0pOoC/kSjvG\", \"role\": \"HR_PERSON\", \"interviewList\": [], \"position\": \"USER\", \"active\": 1, \"enabled\": true, \"authorities\": [{\"authority\": \"HR_PERSON\"}], \"accountNonExpired\": true, \"accountNonLocked\": true, \"credentialsNonExpired\": true}}"
+  - url: "http://localhost:8080/api/projects/{Id}"
     method: "GET"
     expectedStatus: 200
     body: ""
-    expectedResponse: "{\"projectID\": 8, \"projectName\": \"Project KPMM\", \"projectCode\": \"S12345\", \"users\": {\"id\": 3, \"firstName\": \"Kavinda\", \"lastName\": \"Medagoda\", \"username\": \"kavinda@mitrai.com\", \"password\": \"$2a$10$H.lPqu4RKHHkoGJJrZRWGuJvd2yRL5yxh8PKqOcFLD0pOoC/kSjvG\", \"role\": \"HR_PERSON\", \"interviewList\": [], \"position\": \"USER\", \"active\": 1, \"enabled\": true, \"authorities\": [{\"authority\": \"HR_PERSON\"}], \"accountNonExpired\": true, \"accountNonLocked\": true, \"credentialsNonExpired\": true}}"
-  - url: "http://localhost:8080/api/projects/delete/8"
+    expectedResponse: "{\"projectID\": 44, \"projectName\": \"Project KPMM\", \"projectCode\": \"S12345\", \"users\": {\"id\": 3, \"firstName\": \"Kavinda\", \"lastName\": \"Medagoda\", \"username\": \"kavinda@mitrai.com\", \"password\": \"$2a$10$H.lPqu4RKHHkoGJJrZRWGuJvd2yRL5yxh8PKqOcFLD0pOoC/kSjvG\", \"role\": \"HR_PERSON\", \"interviewList\": [], \"position\": \"USER\", \"active\": 1, \"enabled\": true, \"authorities\": [{\"authority\": \"HR_PERSON\"}], \"accountNonExpired\": true, \"accountNonLocked\": true, \"credentialsNonExpired\": true}}"
+  - url: "http://localhost:8080/api/projects/delete/{Id}"
     method: "DELETE"
     expectedStatus: 200
     body: ""
